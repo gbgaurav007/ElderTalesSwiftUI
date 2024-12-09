@@ -5,7 +5,7 @@ import {
   getPostById,
   updatePost,
   deletePost,
-  searchPosts,
+  searchPost,
   createComment,
   updateComment,
   deleteComment,
@@ -17,15 +17,15 @@ import { upload } from "../middlewares/multer.middleware.js";
 const postRouter = Router();
 
 postRouter.route("/")
-  .post(verifyJWT, upload.array("images", 10), createPost)
+  .post(verifyJWT, upload.array("media", 10), createPost)
   .get(verifyJWT, getAllPosts);
 
 postRouter.route("/search")
-  .get(verifyJWT, searchPosts);
+  .get(verifyJWT, searchPost);
 
 postRouter.route("/:postId")
   .get(verifyJWT, getPostById)
-  .put(verifyJWT, upload.array("images", 10), updatePost)
+  .put(verifyJWT, upload.array("media", 10), updatePost)
   .delete(verifyJWT, deletePost);
 
 postRouter.route("/:postId/comments")
