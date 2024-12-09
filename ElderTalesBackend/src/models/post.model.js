@@ -7,6 +7,9 @@ const commentSchema = new Schema(
       ref: "User",
       required: true,
     },
+    name: {
+      type: String,
+    },
     content: {
       type: String,
       required: true,
@@ -17,7 +20,7 @@ const commentSchema = new Schema(
       default: Date.now,
     },
   },
-  { _id: false }
+  { timestamps: true }
 );
 
 const postSchema = new Schema(
@@ -25,6 +28,9 @@ const postSchema = new Schema(
     description: {
       type: String,
       trim: true,
+    },
+    createdBy: {
+      type: String
     },
     media: {
       type: [String],
@@ -35,6 +41,10 @@ const postSchema = new Schema(
         message: 'A post can have a maximum of 10 images.',
       },
     },
+    likesCount: {
+      type: Number,
+      default: 0
+    },
     likes: {
       type: [mongoose.Schema.Types.ObjectId],
       ref: "User",
@@ -44,7 +54,7 @@ const postSchema = new Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      required: true
     },
   },
   { timestamps: true }

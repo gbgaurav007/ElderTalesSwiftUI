@@ -26,6 +26,8 @@ const createPost = asyncHandler(async (req, res) => {
   const post = await Post.create({
     description,
     media: fileUrls,
+    createdBy: req.user.name,
+    user: req.user
   });
 
   req.user.posts.push(post._id);
@@ -40,6 +42,32 @@ const getAllPosts = asyncHandler(async (req, res) => {
   const posts = await Post.find({ _id: { $in: req.user.posts } })
     .populate("user", "name email")
     .select("description media likes comments user createdAt updatedAt");
+
+  const formattedPosts = posts.map((post) => ({
+    postId: post._id,
+    description: post.description,
+    media: post.media,
+    likesCount: post.likes.length,
+    commentsCount: post.comments.length,
+    user: {
+      id: post.user._id,
+      name: post.user.name,
+      email: post.user.email,
+    },
+    createdAt: post.createdAt,
+    updatedAt: post.updatedAt,
+  }));
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, formattedPosts, "Posts fetched successfully."));
+});
+
+const getAllOtherPosts = asyncHandler(async (req, res) => {
+  const posts = await Post.find({ user: { $ne: req.user._id } }) 
+    .populate("user", "name email")
+    .select("description media likes comments user createdAt updatedAt")
+    .sort({ createdAt: -1 });  // Latest first
 
   const formattedPosts = posts.map((post) => ({
     postId: post._id,
@@ -112,7 +140,7 @@ const updatePost = asyncHandler(async (req, res) => {
 
   let updatedMedia = post.media;
   if (req.files && req.files.length > 0) {
-    updatedImages = await handleFileUploads(req.files);
+    updatedMedia = await handleFileUploads(req.files);
   }
 
   const updatedItem = await Post.findByIdAndUpdate(
@@ -123,7 +151,7 @@ const updatePost = asyncHandler(async (req, res) => {
 
   res
     .status(200)
-    .json(new ApiResponse(200, updatedItem, "post updated successfully."));
+    .json(new ApiResponse(200, updatedItem, "Post updated successfully."));
 });
 
 const deletePost = asyncHandler(async (req, res) => {
@@ -157,8 +185,8 @@ const searchPost = asyncHandler(async (req, res) => {
   const posts = await Post.find({
     _id: { $in: req.user.posts },
     $or: [
-      { title: { $regex: keyword, $options: "i" } },
       { description: { $regex: keyword, $options: "i" } },
+      { createdBy: { $regex: keyword, $options: "i" } },
     ],
   });
 
@@ -180,7 +208,8 @@ const createComment = asyncHandler(async (req, res) => {
   }
 
   const comment = {
-    user: req.user._id, // Assuming `req.user` contains the authenticated user's details
+    user: req.user._id,
+    name: req.user.name,
     content,
     createdAt: new Date(),
   };
@@ -246,7 +275,7 @@ const deleteComment = asyncHandler(async (req, res) => {
     );
   }
 
-  comment.remove();
+  post.comments.pull({ _id: commentId });
   await post.save();
 
   res
@@ -270,17 +299,21 @@ const toggleLikePost = asyncHandler(async (req, res) => {
     post.likes.splice(userIndex, 1); // Unlike the post
   }
 
+  const likesCount = post.likes.length;
+  post.likesCount=likesCount;
   await post.save();
+  
   res
     .status(200)
     .json(
-      new ApiResponse(200, { likesCount: post.likes.length }, "Post updated.")
+      new ApiResponse(200, { likesCount: likesCount }, "Post updated.")
     );
 });
 
 export {
   createPost,
   getAllPosts,
+  getAllOtherPosts,
   getPostById,
   updatePost,
   deletePost,

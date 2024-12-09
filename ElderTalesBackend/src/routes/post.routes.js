@@ -3,6 +3,7 @@ import {
   createPost,
   getAllPosts,
   getPostById,
+  getAllOtherPosts,
   updatePost,
   deletePost,
   searchPost,
@@ -19,6 +20,9 @@ const postRouter = Router();
 postRouter.route("/")
   .post(verifyJWT, upload.array("media", 10), createPost)
   .get(verifyJWT, getAllPosts);
+
+postRouter.route("/getAllOtherPosts")
+  .get(verifyJWT, getAllOtherPosts);
 
 postRouter.route("/search")
   .get(verifyJWT, searchPost);
