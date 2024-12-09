@@ -26,7 +26,7 @@ const postSchema = new Schema(
       type: String,
       trim: true,
     },
-    images: {
+    media: {
       type: [String],
       validate: {
         validator: function (v) {
@@ -36,10 +36,16 @@ const postSchema = new Schema(
       },
     },
     likes: {
-      type: Number,
-      default: 0,
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: "User",
+      default: [],
     },
     comments: [commentSchema], 
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
   },
   { timestamps: true }
 );

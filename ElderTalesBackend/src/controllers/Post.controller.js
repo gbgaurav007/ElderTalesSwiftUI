@@ -4,91 +4,133 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { Post } from "../models/post.model.js";
 import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
-import fs from "fs";
 
-
-const handleImageUploads = async (files) => {
-  const imageUrls = [];
+const handleFileUploads = async (files) => {
+  const fileUrls = [];
   for (const file of files) {
     const response = await uploadOnCloudinary(file.path);
-    if (response?.url) imageUrls.push(response.url);
+    if (response?.url) fileUrls.push(response.url);
   }
-  return imageUrls;
+  return fileUrls;
 };
 
-
 const createPost = asyncHandler(async (req, res) => {
-
   const { description } = req.body;
 
   if (!description) {
     throw new ApiError(400, "All required fields must be provided.");
   }
-  
-  const imageUrls = await handleImageUploads(req.files);
+
+  const fileUrls = await handleFileUploads(req.files);
 
   const post = await Post.create({
     description,
-    images: imageUrls,
+    media: fileUrls,
   });
 
   req.user.posts.push(post._id);
   await req.user.save();
 
-  res.status(201).json(new ApiResponse(201, post, "Post created successfully."));
+  res
+    .status(201)
+    .json(new ApiResponse(201, post, "Post created successfully."));
 });
-
 
 const getAllPosts = asyncHandler(async (req, res) => {
-  const posts = await Post.find({ _id: { $in: req.user.posts } });
-  res.status(200).json(new ApiResponse(200, posts, "Posts fetched successfully."));
-});
+  const posts = await Post.find({ _id: { $in: req.user.posts } })
+    .populate("user", "name email")
+    .select("description media likes comments user createdAt updatedAt");
 
+  const formattedPosts = posts.map((post) => ({
+    postId: post._id,
+    description: post.description,
+    media: post.media,
+    likesCount: post.likes.length,
+    commentsCount: post.comments.length,
+    user: {
+      id: post.user._id,
+      name: post.user.name,
+      email: post.user.email,
+    },
+    createdAt: post.createdAt,
+    updatedAt: post.updatedAt,
+  }));
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, formattedPosts, "Posts fetched successfully."));
+});
 
 const getPostById = asyncHandler(async (req, res) => {
-  const post = await Post.findById(req.params.postId);
-  if (!post) {
-    return res
-    .status(404)
-    .json(new ApiResponse(404, {}, "Post not found!"));
-  }
-  res.status(200).json(new ApiResponse(200, post, "Post fetched successfully."));
-});
+  const post = await Post.findById(req.params.postId)
+    .populate("user", "name email")
+    .populate("comments.user", "name email");
 
+  if (!post) {
+    return res.status(404).json(new ApiResponse(404, {}, "Post not found!"));
+  }
+
+  const postDetails = {
+    postId: post._id,
+    description: post.description,
+    media: post.media,
+    likesCount: post.likes.length,
+    comments: post.comments.map((comment) => ({
+      user: {
+        id: comment.user._id,
+        name: comment.user.name,
+        email: comment.user.email,
+      },
+      content: comment.content,
+      createdAt: comment.createdAt,
+    })),
+    user: {
+      id: post.user._id,
+      name: post.user.name,
+      email: post.user.email,
+    },
+    createdAt: post.createdAt,
+    updatedAt: post.updatedAt,
+  };
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, postDetails, "Post fetched successfully."));
+});
 
 const updatePost = asyncHandler(async (req, res) => {
   const { description } = req.body;
 
   const post = await Post.findById(req.params.postId);
   if (!post) {
-    return res
-    .status(404)
-    .json(new ApiResponse(404, {}, "Post not found!"));
+    return res.status(404).json(new ApiResponse(404, {}, "Post not found!"));
   }
 
   if (!req.user.posts.includes(post._id.toString())) {
     throw new ApiError(403, "You do not have permission to update this post.");
   }
 
-  let updatedImages = post.images;
+  let updatedMedia = post.media;
   if (req.files && req.files.length > 0) {
-    updatedImages = await handleImageUploads(req.files);
+    updatedImages = await handleFileUploads(req.files);
   }
 
-  const updatedItem = await Post.findByIdAndUpdate(req.params.postId, req.body, updatedImages, { new: true });
+  const updatedItem = await Post.findByIdAndUpdate(
+    req.params.postId,
+    { description, media: updatedMedia },
+    { new: true }
+  );
 
-  res.status(200).json(new ApiResponse(200, updatedItem, "post updated successfully."));
+  res
+    .status(200)
+    .json(new ApiResponse(200, updatedItem, "post updated successfully."));
 });
 
-
 const deletePost = asyncHandler(async (req, res) => {
-
-  const {postId} = req.params;
+  const { postId } = req.params;
   const post = await Post.findById(postId);
   if (!post) {
-    return res
-    .status(404)
-    .json(new ApiResponse(404, {}, "Post not found!"));
+    return res.status(404).json(new ApiResponse(404, {}, "Post not found!"));
   }
 
   if (!req.user.posts.includes(post._id.toString())) {
@@ -103,21 +145,20 @@ const deletePost = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, {}, "Post deleted successfully."));
 });
 
-
 const searchPost = asyncHandler(async (req, res) => {
   const { keyword } = req.query;
 
   if (!keyword) {
     return res
-    .status(400)
-    .json(new ApiResponse(400, {}, "Search keyword is required."));
+      .status(400)
+      .json(new ApiResponse(400, {}, "Search keyword is required."));
   }
 
   const posts = await Post.find({
     _id: { $in: req.user.posts },
     $or: [
       { title: { $regex: keyword, $options: "i" } },
-      { description: { $regex: keyword, $options: "i" } }
+      { description: { $regex: keyword, $options: "i" } },
     ],
   });
 
@@ -147,7 +188,9 @@ const createComment = asyncHandler(async (req, res) => {
   post.comments.push(comment);
   await post.save();
 
-  res.status(201).json(new ApiResponse(201, comment, "Comment added successfully."));
+  res
+    .status(201)
+    .json(new ApiResponse(201, comment, "Comment added successfully."));
 });
 
 const updateComment = asyncHandler(async (req, res) => {
@@ -169,13 +212,18 @@ const updateComment = asyncHandler(async (req, res) => {
   }
 
   if (comment.user.toString() !== req.user._id.toString()) {
-    throw new ApiError(403, "You do not have permission to update this comment.");
+    throw new ApiError(
+      403,
+      "You do not have permission to update this comment."
+    );
   }
 
   comment.content = content;
   await post.save();
 
-  res.status(200).json(new ApiResponse(200, comment, "Comment updated successfully."));
+  res
+    .status(200)
+    .json(new ApiResponse(200, comment, "Comment updated successfully."));
 });
 
 const deleteComment = asyncHandler(async (req, res) => {
@@ -192,13 +240,53 @@ const deleteComment = asyncHandler(async (req, res) => {
   }
 
   if (comment.user.toString() !== req.user._id.toString()) {
-    throw new ApiError(403, "You do not have permission to delete this comment.");
+    throw new ApiError(
+      403,
+      "You do not have permission to delete this comment."
+    );
   }
 
   comment.remove();
   await post.save();
 
-  res.status(200).json(new ApiResponse(200, {}, "Comment deleted successfully."));
+  res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Comment deleted successfully."));
 });
 
-export { createPost, getAllPosts, getPostById, updatePost, deletePost, searchPost, createComment , updateComment, deleteComment};
+const toggleLikePost = asyncHandler(async (req, res) => {
+  const { postId } = req.params;
+  const userId = req.user._id;
+
+  const post = await Post.findById(postId);
+
+  if (!post) throw new ApiError(404, "Post not found.");
+
+  // Toggle Like
+  const userIndex = post.likes.indexOf(userId);
+  if (userIndex === -1) {
+    post.likes.push(userId); // Like the post
+  } else {
+    post.likes.splice(userIndex, 1); // Unlike the post
+  }
+
+  await post.save();
+  res
+    .status(200)
+    .json(
+      new ApiResponse(200, { likesCount: post.likes.length }, "Post updated.")
+    );
+});
+
+export {
+  createPost,
+  getAllPosts,
+  getPostById,
+  updatePost,
+  deletePost,
+  searchPost,
+  createComment,
+  updateComment,
+  deleteComment,
+  toggleLikePost,
+};

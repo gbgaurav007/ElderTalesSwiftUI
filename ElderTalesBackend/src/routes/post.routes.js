@@ -9,6 +9,7 @@ import {
   createComment,
   updateComment,
   deleteComment,
+  toggleLikePost,
 } from "../controllers/Post.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
@@ -33,5 +34,8 @@ postRouter.route("/:postId/comments")
 postRouter.route("/:postId/comments/:commentId")
   .put(verifyJWT, updateComment)
   .delete(verifyJWT, deleteComment); 
+
+  postRouter.route("/:postId/like")
+  .put(verifyJWT, toggleLikePost);
 
 export default postRouter;
