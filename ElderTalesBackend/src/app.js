@@ -12,13 +12,14 @@ const corsConfig = {
 
 app.use(cors(corsConfig))
 
-app.use(express.json({ limit: "'50kb'" }));
-app.use(express.urlencoded({ extended: true, limit: "'50kb'" }));
+app.use(express.json({ limit: "'50mb'" }));
+app.use(express.urlencoded({ extended: true, limit: "'50mb'" }));
 app.use(express.static("public"));
 app.use(cookieParser());
 
 import userRouter from "./routes/user.routes.js";
 import postRouter from "./routes/post.routes.js";
+
 app.use("/api/auth", userRouter);
 app.use("/api/post", postRouter);
 

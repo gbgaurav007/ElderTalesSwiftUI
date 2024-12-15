@@ -27,7 +27,7 @@ const createPost = asyncHandler(async (req, res) => {
     description,
     media: fileUrls,
     createdBy: req.user.name,
-    user: req.user
+    user: req.user,
   });
 
   req.user.posts.push(post._id);
@@ -64,10 +64,10 @@ const getAllPosts = asyncHandler(async (req, res) => {
 });
 
 const getAllOtherPosts = asyncHandler(async (req, res) => {
-  const posts = await Post.find({ user: { $ne: req.user._id } }) 
+  const posts = await Post.find({ user: { $ne: req.user._id } })
     .populate("user", "name email")
     .select("description media likes comments user createdAt updatedAt")
-    .sort({ createdAt: -1 });  // Latest first
+    .sort({ createdAt: -1 }); // Latest first
 
   const formattedPosts = posts.map((post) => ({
     postId: post._id,
@@ -298,15 +298,19 @@ const toggleLikePost = asyncHandler(async (req, res) => {
   } else {
     post.likes.splice(userIndex, 1); // Unlike the post
   }
-
+  const isLiked = post.likes.includes(userId);
   const likesCount = post.likes.length;
-  post.likesCount=likesCount;
+  post.likesCount = likesCount;
   await post.save();
-  
+
   res
     .status(200)
     .json(
-      new ApiResponse(200, { likesCount: likesCount }, "Post updated.")
+      new ApiResponse(
+        200,
+        { likesCount: likesCount, isLiked: isLiked },
+        "Post updated."
+      )
     );
 });
 
