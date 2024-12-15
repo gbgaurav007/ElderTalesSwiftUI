@@ -2,6 +2,16 @@
 #
 # gitignore contributors: remember to update Global/Xcode.gitignore, Objective-C.gitignore & Swift.gitignore
 
+# Ignore .env files
+**/.env
+
+# Other files
+.gitattributes
+**/.DS_Store
+
+# Respective gitignore files of backend and frontend
+**/.gitignore
+
 ## User settings
 xcuserdata/
 

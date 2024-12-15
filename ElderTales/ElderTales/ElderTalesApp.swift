@@ -9,9 +9,18 @@ import SwiftUI
 
 @main
 struct ElderTalesApp: App {
+    @State private var isLoggedIn = false
+    @State private var userData: UserData?
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            if isLoggedIn {
+                ContentView(isLoggedIn: $isLoggedIn, userData: $userData)
+            } else {
+                AccountView(isLoggedIn: $isLoggedIn, updateUserData: { userData in
+                    self.userData = userData
+                })
+            }
         }
     }
 }
