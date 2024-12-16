@@ -27,14 +27,18 @@ const registerUser = asyncHandler(async (req, res) => {
     const { name, contact, age, email, password } = req.body;
 
     if (!name || !contact || !age || !email || !password) {
-      return res.status(400).json(new ApiResponse(400, {}, "All fields are required."));
+      return res
+        .status(400)
+        .json(new ApiResponse(400, {}, "All fields are required."));
     }
 
     const existedUser = await User.findOne({ email });
 
     if (existedUser) {
       //throw new ApiError(409, "User with email already exists.");
-      return res.status(409).json(new ApiResponse(409, {}, "User with email already exists."));
+      return res
+        .status(409)
+        .json(new ApiResponse(409, {}, "User with email already exists."));
     }
 
     const user = await User.create({
@@ -210,6 +214,129 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, req.user, "Current user fetched successfully"));
 });
 
+const followUser = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user._id;
+
+  if (userId.toString() === id) {
+    throw new ApiError(400, "You cannot follow yourself");
+  }
+
+  const userToFollow = await User.findById(id);
+  const currentUser = await User.findById(userId);
+
+  if (!userToFollow) {
+    throw new ApiError(404, "User to follow not found");
+  }
+
+  if (currentUser.following.includes(id)) {
+    throw new ApiError(400, "You are already following this user");
+  }
+
+  currentUser.following.push(id);
+  userToFollow.followers.push(userId);
+
+  await currentUser.save();
+  await userToFollow.save();
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "User followed successfully"));
+});
+
+const unfollowUser = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user._id;
+
+  const userToUnfollow = await User.findById(id);
+  const currentUser = await User.findById(userId);
+
+  if (!userToUnfollow) {
+    throw new ApiError(404, "User to unfollow not found");
+  }
+
+  currentUser.following = currentUser.following.filter(
+    (followingId) => followingId.toString() !== id
+  );
+  userToUnfollow.followers = userToUnfollow.followers.filter(
+    (followerId) => followerId.toString() !== userId.toString()
+  );
+
+  await currentUser.save();
+  await userToUnfollow.save();
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "User unfollowed successfully"));
+});
+
+const getFollowers = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const user = await User.findById(userId).populate("followers", "name email");
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        followersCount: user.followers.length,
+        followers: user.followers,
+      },
+      "Followers fetched successfully"
+    )
+  );
+});
+
+const getFollowing = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const user = await User.findById(userId).populate("following", "name email");
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        followingCount: user.following.length,
+        following: user.following,
+      },
+      "Following fetched successfully"
+    )
+  );
+});
+
+const getUserById = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  // Fetch user by ID, populate followers, following, and posts
+  const user = await User.findById(id)
+    .select("-password -refreshToken")
+    .populate("followers", "name email")
+    .populate("following", "name email")
+    .populate("posts");
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        user,
+        followersCount: user.followers.length,
+        followingCount: user.following.length,
+      },
+      "User details fetched successfully"
+    )
+  );
+});
+
 export {
   registerUser,
   loginUser,
@@ -217,4 +344,9 @@ export {
   refreshAccessToken,
   changeCurrentPassword,
   getCurrentUser,
+  followUser,
+  unfollowUser,
+  getFollowers,
+  getFollowing,
+  getUserById,
 };

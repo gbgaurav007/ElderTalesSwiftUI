@@ -314,6 +314,67 @@ const toggleLikePost = asyncHandler(async (req, res) => {
     );
 });
 
+const savePost = asyncHandler(async (req, res) => {
+  const { postId } = req.params;
+  const userId = req.user._id;
+
+  const user = await User.findById(userId);
+
+  if (user.savedPosts.includes(postId)) {
+    throw new ApiError(400, "Video is already saved");
+  }
+
+  user.savedPosts.push(postId);
+  await user.save();
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Video saved successfully"));
+});
+
+const unsavePost = asyncHandler(async (req, res) => {
+  const { postId } = req.params;
+  const userId = req.user._id;
+
+  const user = await User.findById(userId);
+
+  user.savedPosts = user.savedPosts.filter(
+    (savedPostId) => savedPostId.toString() !== postId
+  );
+
+  await user.save();
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Video unsaved successfully"));
+});
+
+const getSavedPost = asyncHandler(async (req, res) => {
+  const posts = await Post.find({ _id: { $in: req.user.savedPosts } })
+  .populate("user", "name email")
+  .select("description media likes comments user createdAt updatedAt");
+
+const formattedPosts = posts.map((post) => ({
+  postId: post._id,
+  description: post.description,
+  media: post.media,
+  likesCount: post.likes.length,
+  commentsCount: post.comments.length,
+  user: {
+    id: post.user._id,
+    name: post.user.name,
+    email: post.user.email,
+  },
+  createdAt: post.createdAt,
+  updatedAt: post.updatedAt,
+}));
+
+res
+  .status(200)
+  .json(new ApiResponse(200, formattedPosts, "Posts fetched successfully."));
+
+});
+
 export {
   createPost,
   getAllPosts,
@@ -326,4 +387,7 @@ export {
   updateComment,
   deleteComment,
   toggleLikePost,
+  getSavedPost,
+  savePost,
+  unsavePost,
 };
