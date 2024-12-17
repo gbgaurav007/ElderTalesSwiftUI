@@ -41,7 +41,8 @@ const createPost = asyncHandler(async (req, res) => {
 const getAllPosts = asyncHandler(async (req, res) => {
   const posts = await Post.find({ _id: { $in: req.user.posts } })
     .populate("user", "name email")
-    .select("description media likes comments user createdAt updatedAt");
+    .select("description media likes comments user createdAt updatedAt")
+    .sort({ createdAt: -1 });
 
   const formattedPosts = posts.map((post) => ({
     postId: post._id,
@@ -67,7 +68,7 @@ const getAllOtherPosts = asyncHandler(async (req, res) => {
   const posts = await Post.find({ user: { $ne: req.user._id } })
     .populate("user", "name email")
     .select("description media likes comments user createdAt updatedAt")
-    .sort({ createdAt: -1 }); // Latest first
+    .sort({ createdAt: -1 });
 
   const formattedPosts = posts.map((post) => ({
     postId: post._id,
@@ -352,7 +353,8 @@ const unsavePost = asyncHandler(async (req, res) => {
 const getSavedPost = asyncHandler(async (req, res) => {
   const posts = await Post.find({ _id: { $in: req.user.savedPosts } })
   .populate("user", "name email")
-  .select("description media likes comments user createdAt updatedAt");
+  .select("description media likes comments user createdAt updatedAt")
+  .sort({ createdAt: -1 });
 
 const formattedPosts = posts.map((post) => ({
   postId: post._id,
@@ -375,6 +377,47 @@ res
 
 });
 
+const getUsersPost = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+
+  // Validate if userId is provided
+  if (!userId) {
+    throw new ApiError(400, "User ID is required.");
+  }
+
+  // Fetch posts of the user
+  const posts = await Post.find({ user: userId })
+    .populate("user", "name email")
+    .select("description media likes comments user createdAt updatedAt")
+    .sort({ createdAt: -1 });
+
+  if (!posts.length) {
+    return res
+      .status(404)
+      .json(new ApiResponse(404, [], "No posts found for this user."));
+  }
+
+  // Format posts for the response
+  const formattedPosts = posts.map((post) => ({
+    postId: post._id,
+    description: post.description,
+    media: post.media,
+    likesCount: post.likes.length,
+    commentsCount: post.comments.length,
+    user: {
+      id: post.user._id,
+      name: post.user.name,
+      email: post.user.email,
+    },
+    createdAt: post.createdAt,
+    updatedAt: post.updatedAt,
+  }));
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, formattedPosts, "User's posts fetched successfully."));
+});
+
 export {
   createPost,
   getAllPosts,
@@ -390,4 +433,5 @@ export {
   getSavedPost,
   savePost,
   unsavePost,
+  getUsersPost,
 };

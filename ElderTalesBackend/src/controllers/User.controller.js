@@ -316,9 +316,6 @@ const getUserById = asyncHandler(async (req, res) => {
   // Fetch user by ID, populate followers, following, and posts
   const user = await User.findById(id)
     .select("-password -refreshToken")
-    .populate("followers", "name email")
-    .populate("following", "name email")
-    .populate("posts");
 
   if (!user) {
     throw new ApiError(404, "User not found");

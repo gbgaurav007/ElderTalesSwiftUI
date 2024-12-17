@@ -14,6 +14,7 @@ import {
   savePost,
   unsavePost,
   getSavedPost,
+  getUsersPost,
 } from "../controllers/Post.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
@@ -50,5 +51,7 @@ postRouter
   .delete(verifyJWT, unsavePost);
 
 postRouter.route("/saved/save").get(verifyJWT, getSavedPost);
+
+postRouter.route("/:userId/posts").get(verifyJWT, getUsersPost);
 
 export default postRouter;

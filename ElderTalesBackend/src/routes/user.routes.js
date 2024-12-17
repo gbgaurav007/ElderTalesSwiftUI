@@ -23,7 +23,7 @@ userRouter.route("/refresh-token").post(refreshAccessToken);
 userRouter.route("/change-password").post(verifyJWT, changeCurrentPassword);
 userRouter.route("/current-user").get(verifyJWT, getCurrentUser);
 
-userRouter.route("/:id/follow").post(verifyJWT, followUser); 
+userRouter.route("/:id/follow").post(verifyJWT, followUser);
 userRouter.route("/:id/unfollow").post(verifyJWT, unfollowUser);
 userRouter.route("/followers").get(verifyJWT, getFollowers);
 userRouter.route("/following").get(verifyJWT, getFollowing);
