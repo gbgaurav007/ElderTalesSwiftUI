@@ -32,14 +32,18 @@ struct Post: Identifiable, Decodable {
     var likesCount: Int
     var commentsCount: Int
     let userName: String
+    let userID: String
     let createdAt: String
     var isLiked: Bool
+    var isSaved: Bool
+    var isFollowing: Bool
     var comments: [PostComment]?
-    
     var mediaURL: String {
         guard let url = media.first else { return "" }
         return url.hasPrefix("http://") ? url.replacingOccurrences(of: "http://", with: "https://") : url
     }
+    
+    // Custom coding keys to map JSON fields to Swift properties
     private enum CodingKeys: String, CodingKey {
         case id = "postId"
         case description
@@ -50,10 +54,13 @@ struct Post: Identifiable, Decodable {
         case createdAt
         case isLiked
         case comments
+        case isSaved
+        case isFollowing
         
         // Nested user keys
         enum UserKeys: String, CodingKey {
             case name
+            case id
         }
     }
     
@@ -64,22 +71,23 @@ struct Post: Identifiable, Decodable {
         
         media = try container.decode([String].self, forKey: .media)
         
-        
         likesCount = try container.decode(Int.self, forKey: .likesCount)
         createdAt = try container.decode(String.self, forKey: .createdAt)
         
-        // Decode nested user object for the userName
         let userContainer = try container.nestedContainer(keyedBy: CodingKeys.UserKeys.self, forKey: .user)
         userName = try userContainer.decode(String.self, forKey: .name)
         isLiked = try container.decodeIfPresent(Bool.self, forKey: .isLiked) ?? false
-        // Decode comments if available
         commentsCount = try container.decodeIfPresent(Int.self, forKey: .commentsCount) ?? comments?.count ?? 0
         comments = try container.decodeIfPresent([PostComment].self, forKey: .comments)
+        userID = try userContainer.decode(String.self, forKey: .id)
+        isSaved = try container.decodeIfPresent(Bool.self, forKey: .isSaved) ?? false
+        isFollowing = try container.decodeIfPresent(Bool.self, forKey: .isFollowing) ?? false
+        
     }
     
     func formattedCreatedAt() -> String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'" // Matching the format
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
         formatter.timeZone = TimeZone(abbreviation: "UTC")
         
         guard let date = formatter.date(from: createdAt) else {

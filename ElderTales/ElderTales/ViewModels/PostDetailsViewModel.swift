@@ -7,10 +7,11 @@
 
 import Foundation
 
-class PostDetailsViewModel: ObservableObject, LikeHandling {
+class PostDetailsViewModel: ObservableObject {
     @Published var post: Post?
     @Published var likesCount: Int = 0
     @Published var isLiked: Bool = false
+    @Published var isBookmarked: Bool = false
     @Published var newCommentContent: String = ""
     
     func fetchPostDetails(postId: String) {
@@ -33,33 +34,9 @@ class PostDetailsViewModel: ObservableObject, LikeHandling {
                 DispatchQueue.main.async {
                     self.post = response.data
                     self.likesCount = response.data.likesCount
-                    self.isLiked = response.data.isLiked
                 }
             } catch {
                 print("Error fetching post details: \(error)")
-            }
-        }.resume()
-    }
-    
-    func toggleLike(postId: String) {
-        guard let url = URL(string: "\(API_BASE_URL)/post/\(postId)/like") else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = isLiked ? "DELETE" : "POST"
-        request.setValue("Bearer \(getAccessToken())", forHTTPHeaderField: "Authorization")
-        
-        URLSession.shared.dataTask(with: request) { data, _, error in
-            guard let data = data, error == nil else {
-                print("Error toggling like: \(error?.localizedDescription ?? "Unknown error")")
-                return
-            }
-            do {
-                let response = try JSONDecoder().decode(LikeResponse.self, from: data)
-                DispatchQueue.main.async {
-                    self.isLiked = response.isLiked
-                    self.likesCount = response.likesCount
-                }
-            } catch {
-                print("Error decoding like response: \(error)")
             }
         }.resume()
     }
@@ -102,12 +79,34 @@ class PostDetailsViewModel: ObservableObject, LikeHandling {
             }
         }.resume()
     }
-}
-
-
-protocol LikeHandling {
-    var likesCount: Int { get set }
-    var isLiked: Bool { get set }
     
-    func toggleLike(postId: String)
+    func toggleLike(postId: String) {
+               guard let post = post else { return }
+           PostService.shared.toggleLike(postId: postId) { result in
+               DispatchQueue.main.async {
+                   switch result {
+                   case .success(let likeData):
+                       self.post?.isLiked = likeData.isLiked
+                       self.post?.likesCount = likeData.likesCount
+                   case .failure(let error):
+                       print("Error toggling like: \(error.localizedDescription)")
+                   }
+               }
+           }
+       }
+
+    func toggleSave(postId: String) {
+        guard let post = post else { return }
+        let isCurrentlySaved = post.isSaved
+        PostService.shared.toggleSave(postId: postId, isSaved: isCurrentlySaved) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    self.post?.isSaved.toggle()
+                case .failure(let error):
+                    print("Error toggling save: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
 }

@@ -10,7 +10,9 @@ import AVKit
 
 struct PostCard: View {
     @Binding var post: Post
-    @EnvironmentObject var viewModel: PostViewModel
+    var onToggleLike: (() -> Void)?
+    var onToggleSave: (() -> Void)?
+    var onToggleFollow: (() -> Void)?
     
     var body: some View {
         
@@ -72,7 +74,7 @@ struct PostCard: View {
             
             HStack {
                 Button(action: {
-                    viewModel.toggleLike(postId: post.id)
+                    onToggleLike?()
                 }) {
                     Image(systemName: post.isLiked ? "heart.fill" : "heart")
                     Text("\(post.likesCount)")
@@ -84,9 +86,10 @@ struct PostCard: View {
                     }
                 }
                 Spacer()
-                Button(action: {}) {
-                    Image(systemName: "square.and.arrow.down")
-                        .padding()
+                Button(action: {
+                    onToggleSave?()
+                }) {
+                    Image(systemName: post.isSaved ? "bookmark.fill" : "bookmark")
                 }
             }
         }

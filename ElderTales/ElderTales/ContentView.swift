@@ -35,16 +35,3 @@ struct ContentView: View {
         }
     }
 }
-
-
-struct ProfileView: View {
-    var body: some View {
-        Text("Profile View")
-    }
-}
-
-struct  CreatePostView: View {
-    var body: some View {
-        Text("Create Post View")
-    }
-}

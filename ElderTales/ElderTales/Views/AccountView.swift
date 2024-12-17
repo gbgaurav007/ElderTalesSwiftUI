@@ -24,8 +24,8 @@ struct AccountView: View {
                     if !viewModel.isLogin {
                         CustomTextField(placeholder: "Name", text: $viewModel.formData.name)
                         CustomTextField(placeholder: "Age",   text: Binding(
-                            get: { String(viewModel.formData.age) }, // Convert Int to String
-                            set: { viewModel.formData.age = Int($0) ?? 0 } // Convert String back to Int
+                            get: { String(viewModel.formData.age) },
+                            set: { viewModel.formData.age = Int($0) ?? 0 }
                         ))
                         CustomTextField(placeholder: "Contact", text: $viewModel.formData.contact)
                     }
@@ -44,7 +44,7 @@ struct AccountView: View {
                     
                     if viewModel.isLoading {
                         ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .green))
+                            .progressViewStyle(CircularProgressViewStyle(tint: .indigo))
                             .padding(.top)
                     }
                     
@@ -56,7 +56,7 @@ struct AccountView: View {
                     
                     Button(action: { viewModel.isLogin.toggle() }) {
                         Text(viewModel.isLogin ? "Create an account" : "Already have an account?")
-                            .foregroundColor(Color(.systemPurple))
+                            .foregroundColor(Color(.systemIndigo))
                     }
                 }
                 .padding()

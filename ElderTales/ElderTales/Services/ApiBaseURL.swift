@@ -7,4 +7,4 @@
 
 import Foundation
 
-let API_BASE_URL = "http://localhost:8000/api"
+let API_BASE_URL = "https://eldertalesswiftui.onrender.com/api"

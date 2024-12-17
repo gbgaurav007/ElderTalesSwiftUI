@@ -12,7 +12,7 @@ func saveAccessTokenToCookies(token: String) {
     let cookieProperties: [HTTPCookiePropertyKey: Any] = [
         .name: "accessToken",
         .value: token,
-        .domain: "localhost", // Adjust domain to match your server setup
+        .domain: "localhost",
         .path: "/",
         .expires: Date().addingTimeInterval(60 * 60 * 24)
     ]

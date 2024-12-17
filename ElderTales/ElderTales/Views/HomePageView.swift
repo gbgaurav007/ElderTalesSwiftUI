@@ -21,7 +21,12 @@ struct HomePageView: View {
                 ScrollView {
                     ForEach($viewModel.posts) { $post in
                         NavigationLink(destination: PostDetailsView(postId: post.id)) {
-                            PostCard(post: $post)
+                            PostCard(post: $post, onToggleLike:{
+                                viewModel.toggleLike(postId: post.id)
+                            },
+                                     onToggleSave: {
+                                viewModel.toggleSave(postId: post.id)
+                            })
                                 .environmentObject(viewModel)
                                 .padding(.horizontal)
                                 .padding(.top, 10)
@@ -33,7 +38,7 @@ struct HomePageView: View {
             .onAppear {
                 viewModel.fetchPosts()
             }
-            .navigationBarHidden(true)
+            .navigationTitle("Home")
         }
     }
 }

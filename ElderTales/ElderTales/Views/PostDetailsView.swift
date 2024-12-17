@@ -8,10 +8,13 @@
 import SwiftUI
 import AVKit
 
+
 struct PostDetailsView: View {
     let postId: String
     @StateObject private var viewModel = PostDetailsViewModel()
     @State private var commentContent: String = ""
+    @State private var navigateToProfile: Bool = false
+    @State private var selectedUserId: String?
     
     var body: some View {
         VStack {
@@ -30,8 +33,19 @@ struct PostDetailsView: View {
                                 )
                             
                             VStack(alignment: .leading) {
-                                Text(post.userName)
-                                    .font(.headline)
+                                NavigationLink(
+                                    destination: PeopleProfileView(userId: post.userID),
+                                    isActive: $navigateToProfile
+                                ) {
+                                    Text(post.userName)
+                                        .font(.headline)
+                                        .foregroundColor(.white)
+                                        .onTapGesture {
+                                            selectedUserId = post.userID
+                                            navigateToProfile = true
+                                        }
+                                }
+                                
                                 Text(post.formattedCreatedAt())
                                     .font(.subheadline)
                                     .foregroundColor(.gray)
@@ -39,11 +53,9 @@ struct PostDetailsView: View {
                             Spacer()
                         }
                         
-                        // Post Description
                         Text(post.description)
                             .font(.body)
                         
-                        // Post Media (Image or Video)
                         if let mediaURLString = post.media.first,
                            let mediaURL = URL(string: post.mediaURL),
                            !mediaURLString.isEmpty {
@@ -76,17 +88,23 @@ struct PostDetailsView: View {
                                 .foregroundColor(.red)
                         }
                         
-                        // Like and Comment Counts
                         HStack {
                             Button(action: {
-                                viewModel.toggleLike(postId: post.id)
+                                viewModel.toggleLike(postId: postId)
                             }) {
-                                Image(systemName: viewModel.isLiked ? "heart.fill" : "heart")
-                                    .foregroundColor(viewModel.isLiked ? .red : .gray)
-                                Text("\(viewModel.likesCount)")
+                                HStack {
+                                    Image(systemName: viewModel.post?.isLiked == true ? "heart.fill" : "heart")
+                                    Text("\(post.likesCount)")
+                                        .foregroundColor(.primary)
+                                }
                             }
                             
                             Spacer()
+                            Button(action: {
+                                viewModel.toggleSave(postId: postId)
+                            }) {
+                                Image(systemName: viewModel.post?.isSaved == true ? "bookmark.fill" : "bookmark")
+                            }
                             Text("Comments")
                                 .font(.subheadline)
                                 .foregroundColor(.gray)
@@ -95,7 +113,6 @@ struct PostDetailsView: View {
                         
                         Divider()
                         
-                        // Add Comment
                         HStack {
                             TextField("Write a comment...", text: $viewModel.newCommentContent)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -110,13 +127,12 @@ struct PostDetailsView: View {
                         }
                         .padding(.top, 10)
                         
-                        // Comments Section
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Comments")
                                 .font(.headline)
                             
                             if let comments = post.comments?.sorted(by: {
-                                $0.createdAt > $1.createdAt // Sort by most recent
+                                $0.createdAt > $1.createdAt
                             }), !comments.isEmpty {
                                 ForEach(comments) { comment in
                                     VStack(alignment: .leading) {

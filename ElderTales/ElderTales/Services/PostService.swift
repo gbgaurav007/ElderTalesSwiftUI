@@ -7,7 +7,6 @@
 
 import Foundation
 
-
 class PostService {
     static let shared = PostService()
     private init() {}
@@ -37,5 +36,37 @@ class PostService {
         }.resume()
     }
     
+    func toggleSave(postId: String, isSaved: Bool, completion: @escaping (Result<Void, Error>) -> Void) {
+        let endpoint = isSaved ? "unsavePost" : "savePost"
+        guard let url = URL(string: "\(API_BASE_URL)/post/\(postId)/\(endpoint)") else { return }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.setValue("Bearer \(getAccessToken())", forHTTPHeaderField: "Authorization")
+        
+        URLSession.shared.dataTask(with: request) { _, _, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            completion(.success(()))
+        }.resume()
+    }
     
+    func toggleFollow(userId: String, isFollowing: Bool, completion: @escaping (Result<Void, Error>) -> Void) {
+        let endpoint = isFollowing ? "unfollow" : "follow"
+        guard let url = URL(string: "\(API_BASE_URL)/user/\(userId)/\(endpoint)") else { return }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(getAccessToken())", forHTTPHeaderField: "Authorization")
+        
+        URLSession.shared.dataTask(with: request) { _, _, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            completion(.success(()))
+        }.resume()
+    }
 }
