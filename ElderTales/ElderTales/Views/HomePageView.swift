@@ -2,7 +2,6 @@
 //  HomePageView.swift
 //  ElderTales
 //
-//  Created by Gaurav Bansal on 15/12/24.
 //
 
 import SwiftUI
@@ -13,11 +12,6 @@ struct HomePageView: View {
     var body: some View {
         NavigationView {
             VStack {
-                Text("Home")
-                    .font(.largeTitle)
-                    .bold()
-                    .padding(.top, 20)
-                
                 ScrollView {
                     ForEach($viewModel.posts) { $post in
                         NavigationLink(destination: PostDetailsView(postId: post.id)) {

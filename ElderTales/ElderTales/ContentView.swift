@@ -22,8 +22,8 @@ struct ContentView: View {
             // Your Rides Tab
             CreatePostView()
                 .tabItem {
-                    Image(systemName: "car.fill")
-                    Text("Your Rides")
+                    Image(systemName: "plus.square")
+                    Text("Add Post")
                 }
             
             // Profile Tab
